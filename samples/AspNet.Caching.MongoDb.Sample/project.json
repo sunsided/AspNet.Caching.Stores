@@ -1,0 +1,9 @@
+{
+    "dependencies": {
+        "AspNet.Caching.MongoDb": "1.0.0-*"
+    },
+    "commands": { "run": "AspNet.Caching.MongoDb.Sample" },
+    "frameworks" : {
+        "dnx451" : { }
+    }
+}
