@@ -1,0 +1,15 @@
+﻿{
+    "version": "1.0.0-*",
+    "description": "MongoDB store for ASP.NET 5 caching system",
+    "authors": [ "Markus Mayer" ],
+    "owners": [ "Kévin Chalet" ],
+
+    "projectUrl": "https://github.com/aspnet-contrib/AspNet.Caching.Stores",
+    "licenseUrl": "http://www.apache.org/licenses/LICENSE-2.0.html",
+
+    "dependencies": { },
+
+    "frameworks": {
+        "dnx451": { }
+    }
+}
