@@ -7,7 +7,15 @@
     "projectUrl": "https://github.com/aspnet-contrib/AspNet.Caching.Stores",
     "licenseUrl": "http://www.apache.org/licenses/LICENSE-2.0.html",
 
-    "dependencies": { },
+    "compilationOptions": {
+        "warningsAsErrors": true
+    },
+
+    "dependencies": {
+      "Microsoft.Framework.Caching.Abstractions": "1.0.0-*",
+      "Microsoft.Framework.OptionsModel": "1.0.0-*",
+      "MongoDB.Driver":  "2.0.1"
+    },
 
     "frameworks": {
         "dnx451": { }
