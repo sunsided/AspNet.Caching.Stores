@@ -12,12 +12,12 @@ namespace AspNet.Caching.MongoDb
         public byte[] CacheData { get; internal set; }
 
         [BsonElement("eat")]
-        public DateTimeOffset ExpireAt { get; internal set; }
+        public DateTime ExpireAt { get; internal set; }
 
         [BsonElement("sex")]
         public TimeSpan SlidingExpiration { get; internal set; }
 
         [BsonElement("sat")]
-        public DateTimeOffset SlidingExpireAt { get; internal set; }
+        public DateTime SlidingExpireAt { get; internal set; }
     }
 }
