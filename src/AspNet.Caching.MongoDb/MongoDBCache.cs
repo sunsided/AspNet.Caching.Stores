@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.Framework.Caching.Distributed;
 using Microsoft.Framework.Caching.Memory;
@@ -78,15 +79,20 @@ namespace AspNet.Caching.MongoDb {
 
             await ConnectAsync().ConfigureAwait(false);
 
-            var data = await _collection.FindOneAndUpdateAsync<MongoDbCacheEntry, MongoDbCacheEntry>(x => x.Key == key,
-                Builders<MongoDbCacheEntry>.Update.Set(x => x.LastAccess, DateTime.UtcNow),
-                new FindOneAndUpdateOptions<MongoDbCacheEntry> {
-                    ReturnDocument = ReturnDocument.After,
-                    Projection = Builders<MongoDbCacheEntry>.Projection.Include(x => x.CacheData)
-                })
+            var list = await _collection.Find(x => x.Key == key)
+                .Project(x => new {
+                                  x.CacheData,
+                                  x.ExpireAt,
+                                  x.SlidingExpiration
+                              })
+                .ToListAsync()
                 .ConfigureAwait(false);
 
-            return data?.CacheData;
+            var data = list.FirstOrDefault();
+            if (data == null) return null;
+
+            await RefreshAsync(key, data.ExpireAt, data.SlidingExpiration).ConfigureAwait(false);
+            return data.CacheData;
         }
 
         public void Set(string key, byte[] value, DistributedCacheEntryOptions options) {
@@ -115,7 +121,6 @@ namespace AspNet.Caching.MongoDb {
             }
 
             update = update
-                .Set(x => x.CreatedAt, now.UtcDateTime)
                 .Set(x => x.ExpireAt, expireAt.UtcDateTime)
                 .Set(x => x.SlidingExpireAt, slidingExpireAt.UtcDateTime);
 
@@ -157,19 +162,23 @@ namespace AspNet.Caching.MongoDb {
             }
 
             var entry = cursor.Current.First();
+            await RefreshAsync(key, entry.ExpireAt, entry.SlidingExpiration).ConfigureAwait(false);
+        }
 
+        private Task RefreshAsync(string key, DateTimeOffset expireAt, TimeSpan slidingExpiration)
+        {
+            if (key == null) {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            // we don't care if sat > eat, because the index that triggers first wins
             var now = _clock.UtcNow;
-            var sex = entry.SlidingExpiration;
-            var sat = sex == default(TimeSpan) ? entry.ExpireAt : now.Add(sex).UtcDateTime;
+            var sat = slidingExpiration == default(TimeSpan) ? expireAt : now.Add(slidingExpiration).UtcDateTime;
 
-            // now we just recalculate the key and store
             var update = Builders<MongoDbCacheEntry>.Update
-                .Set(x => x.LastAccess, now.UtcDateTime)
                 .Set(x => x.SlidingExpireAt, sat);
 
-            await _collection
-                .FindOneAndUpdateAsync(x => x.Key == key, update)
-                .ConfigureAwait(false);
+            return _collection.FindOneAndUpdateAsync(x => x.Key == key, update);
         }
 
         public void Remove(string key) {
