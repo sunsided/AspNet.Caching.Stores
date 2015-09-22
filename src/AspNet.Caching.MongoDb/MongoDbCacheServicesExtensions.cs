@@ -1,10 +1,15 @@
-﻿using System;
+﻿/*
+ * Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+ * See https://github.com/aspnet-contrib/AspNet.Security.OAuth.Providers
+ * for more information concerning the license and the contributors participating to this project.
+ */
+
+using System;
 using Microsoft.Framework.Caching.Distributed;
 using Microsoft.Framework.DependencyInjection;
 using Microsoft.Framework.DependencyInjection.Extensions;
 
-namespace AspNet.Caching.MongoDb
-{
+namespace AspNet.Caching.MongoDb {
     /// <summary>
     /// Extension methods for setting up MongoDB distributed cache related services in an
     /// <see cref="IServiceCollection" />.

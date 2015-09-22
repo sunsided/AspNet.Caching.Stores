@@ -1,15 +1,16 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿/*
+ * Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+ * See https://github.com/aspnet-contrib/AspNet.Security.OAuth.Providers
+ * for more information concerning the license and the contributors participating to this project.
+ */
 
 using System;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Framework.Caching.Distributed;
 
-namespace AspNet.Caching.MongoDb.Sample
-{
-    public class Program
-    {
+namespace AspNet.Caching.MongoDb.Sample {
+    public class Program {
         /// <summary>
         /// This sample assumes that a MongoDB server is running on the local machine.
         /// </summary>
