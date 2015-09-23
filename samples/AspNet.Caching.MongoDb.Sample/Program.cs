@@ -56,10 +56,43 @@ namespace AspNet.Caching.MongoDb.Sample {
                 Console.WriteLine("Retrieved: " + Encoding.UTF8.GetString(value));
             }
             else {
-                Console.WriteLine("Not Found");
+                Console.WriteLine("Not Found (that's good.)");
             }
 
-            Console.ReadLine();
+            value = Encoding.UTF8.GetBytes(message);
+            Console.WriteLine($"Setting value '{message}' in cache with sliding expiration");
+            await cache.SetAsync(key, value, new DistributedCacheEntryOptions
+                                                 {
+                                                     SlidingExpiration = TimeSpan.FromSeconds(1)
+                                                 });
+            Console.WriteLine("Set");
+
+            Console.WriteLine("Getting value from cache");
+            value = await cache.GetAsync(key);
+            if (value != null)
+            {
+                Console.WriteLine("Retrieved: " + Encoding.UTF8.GetString(value) + " (that's good)");
+            }
+            else
+            {
+                Console.WriteLine("Not Found (that's bad)");
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(4)).ConfigureAwait(false);
+
+            Console.WriteLine("Getting value from cache again");
+            value = await cache.GetAsync(key);
+            if (value != null)
+            {
+                Console.WriteLine("Retrieved: " + Encoding.UTF8.GetString(value) + " (that's bad)");
+            }
+            else
+            {
+                Console.WriteLine("Not Found (that's good.)");
+            }
+
+            Console.WriteLine("Press key to exit.");
+            Console.ReadKey(true);
         }
     }
 }
