@@ -41,32 +41,6 @@ namespace AspNet.Caching.MongoDb {
             _clock = _options.Clock ?? new SystemClock();
         }
 
-        public MongoDbCache(Action<MongoDbCacheOptions> setup) {
-            if (setup == null) {
-                throw new ArgumentNullException(nameof(setup));
-            }
-
-            _options = new MongoDbCacheOptions();
-            setup(_options);
-
-            if (string.IsNullOrWhiteSpace(_options.ConnectionString))
-            {
-                throw new InvalidOperationException("The MongoDB connection string must be nonempty.");
-            }
-
-            if (string.IsNullOrWhiteSpace(_options.Database))
-            {
-                throw new InvalidOperationException("The MongoDB database name must be nonempty.");
-            }
-
-            if (string.IsNullOrWhiteSpace(_options.Collection))
-            {
-                throw new InvalidOperationException("The MongoDB collection name must be nonempty.");
-            }
-
-            _clock = _options.Clock ?? new SystemClock();
-        }
-
         public void Connect() {
             ConnectAsync().GetAwaiter().GetResult();
         }
