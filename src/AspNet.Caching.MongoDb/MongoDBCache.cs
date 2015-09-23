@@ -57,16 +57,14 @@ namespace AspNet.Caching.MongoDb {
                 Builders<MongoDbCacheEntry>.IndexKeys.Ascending(x => x.ExpireAt),
                 new CreateIndexOptions {
                     ExpireAfter = TimeSpan.FromSeconds(0)
-                })
-                .ConfigureAwait(false);
+                });
 
             // Create the index to expire on the "sliding expiration" value
             await collection.Indexes.CreateOneAsync(
                 Builders<MongoDbCacheEntry>.IndexKeys.Ascending(x => x.SlidingExpireAt),
                 new CreateIndexOptions {
                     ExpireAfter = TimeSpan.FromSeconds(0)
-                })
-                .ConfigureAwait(false);
+                });
         }
 
         public byte[] Get(string key) {
@@ -82,7 +80,7 @@ namespace AspNet.Caching.MongoDb {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            await ConnectAsync().ConfigureAwait(false);
+            await ConnectAsync();
 
             var list = await _collection.Find(x => x.Key == key)
                 .Project(x => new {
@@ -90,13 +88,12 @@ namespace AspNet.Caching.MongoDb {
                                   x.ExpireAt,
                                   x.SlidingExpiration
                               })
-                .ToListAsync()
-                .ConfigureAwait(false);
+                .ToListAsync();
 
             var data = list.FirstOrDefault();
             if (data == null) return null;
 
-            await RefreshAsync(key, data.ExpireAt, data.SlidingExpiration).ConfigureAwait(false);
+            await RefreshAsync(key, data.ExpireAt, data.SlidingExpiration);
             return data.CacheData;
         }
 
@@ -135,11 +132,10 @@ namespace AspNet.Caching.MongoDb {
                 Projection = Builders<MongoDbCacheEntry>.Projection.Include(x => x.Key)
             };
 
-            await ConnectAsync().ConfigureAwait(false);
+            await ConnectAsync();
             await _collection.FindOneAndUpdateAsync(x => x.Key == key,
                 update,
-                updateOptions)
-                .ConfigureAwait(false);
+                updateOptions);
         }
 
         public void Refresh(string key) {
@@ -159,15 +155,14 @@ namespace AspNet.Caching.MongoDb {
                     Projection = Builders<MongoDbCacheEntry>.Projection
                     .Include(x => x.ExpireAt)
                     .Include(x => x.SlidingExpiration)
-                })
-                .ConfigureAwait(false);
+                });
 
-            if (!await cursor.MoveNextAsync().ConfigureAwait(false)) {
+            if (!await cursor.MoveNextAsync()) {
                 return;
             }
 
             var entry = cursor.Current.First();
-            await RefreshAsync(key, entry.ExpireAt, entry.SlidingExpiration).ConfigureAwait(false);
+            await RefreshAsync(key, entry.ExpireAt, entry.SlidingExpiration);
         }
 
         private Task RefreshAsync(string key, DateTimeOffset expireAt, TimeSpan slidingExpiration)
