@@ -44,12 +44,21 @@ namespace AspNet.Caching.MongoDb {
             ConnectAsync().GetAwaiter().GetResult();
         }
 
-        public async Task ConnectAsync() {
-            var client = _client;
-            if (client != null) return;
+        private bool CreateMongoClientSynchronized() {
+            lock (_options.ConnectionString) {
+                if (_client != null) return true;
+                _client = new MongoClient(_options.ConnectionString);
+                return false;
+            }
+        }
 
-            _client = client = new MongoClient(_options.ConnectionString);
-            var database = client.GetDatabase(_options.Database);
+        public async Task ConnectAsync() {
+            var connectionAlreadyEstablished = CreateMongoClientSynchronized();
+            if (connectionAlreadyEstablished) {
+                return;
+            }
+
+            var database = _client.GetDatabase(_options.Database);
             var collection = _collection = database.GetCollection<MongoDbCacheEntry>(_options.Collection);
 
             // Create the index to expire on the "expire at" value
