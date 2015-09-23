@@ -20,16 +20,38 @@ namespace AspNet.Caching.MongoDb {
         /// Adds MongoDB distributed caching services to the specified <see cref="IServiceCollection" />.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
-        /// <param name="setupAction">The action used to configure the cache.</param>
         /// <returns>A reference to this instance after the operation has completed.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null" />.</exception>
-        public static IServiceCollection AddMongoDbCache(this IServiceCollection services, Action<MongoDbCacheOptions> setupAction = null) {
-            if (services == null) {
+        public static IServiceCollection AddMongoDbCache(this IServiceCollection services)
+        {
+            if (services == null)
+            {
                 throw new ArgumentNullException(nameof(services));
             }
 
             services.AddOptions();
-            if (setupAction != null) services.Configure(setupAction);
+            services.TryAdd(ServiceDescriptor.Singleton<IDistributedCache, MongoDbCache>());
+            return services;
+        }
+
+        /// <summary>
+        /// Adds MongoDB distributed caching services to the specified <see cref="IServiceCollection" />.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection" /> to add services to.</param>
+        /// <param name="setupAction">The action used to configure the cache.</param>
+        /// <returns>A reference to this instance after the operation has completed.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null" />.</exception>
+        public static IServiceCollection AddMongoDbCache(this IServiceCollection services, Action<MongoDbCacheOptions> setupAction) {
+            if (services == null) {
+                throw new ArgumentNullException(nameof(services));
+            }
+
+            if (setupAction == null) {
+                throw new ArgumentNullException(nameof(setupAction));
+            }
+
+            services.AddOptions();
+            services.Configure(setupAction);
             services.TryAdd(ServiceDescriptor.Singleton<IDistributedCache, MongoDbCache>());
             return services;
         }
