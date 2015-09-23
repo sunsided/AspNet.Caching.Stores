@@ -41,7 +41,7 @@ namespace AspNet.Caching.MongoDb {
         }
 
         public void Connect() {
-            ConnectAsync().Wait();
+            ConnectAsync().GetAwaiter().GetResult();
         }
 
         public async Task ConnectAsync() {
@@ -105,7 +105,7 @@ namespace AspNet.Caching.MongoDb {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            SetAsync(key, value, options).Wait();
+            SetAsync(key, value, options).GetAwaiter().GetResult();
         }
 
         public async Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options) {
@@ -143,7 +143,7 @@ namespace AspNet.Caching.MongoDb {
         }
 
         public void Refresh(string key) {
-            RefreshAsync(key).Wait();
+            RefreshAsync(key).GetAwaiter().GetResult();
         }
 
         public async Task RefreshAsync(string key) {
@@ -187,7 +187,7 @@ namespace AspNet.Caching.MongoDb {
         }
 
         public void Remove(string key) {
-            RemoveAsync(key).Wait();
+            RemoveAsync(key).GetAwaiter().GetResult();
         }
 
         public Task RemoveAsync(string key) {
