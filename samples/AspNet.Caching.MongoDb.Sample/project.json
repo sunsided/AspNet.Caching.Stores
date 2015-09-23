@@ -4,6 +4,7 @@
     },
     "commands": { "run": "AspNet.Caching.MongoDb.Sample" },
     "frameworks" : {
-        "dnx451" : { }
+      "dnx451": { },
+      "net45" : { }
     }
 }
