@@ -170,7 +170,14 @@ namespace AspNet.Caching.MongoDb {
             }
 
             var entry = cursor.Current.First();
-            await RefreshAsync(key, entry.ExpireAt, entry.SlidingExpiration);
+            try
+            {
+                await RefreshAsync(key, entry.ExpireAt, entry.SlidingExpiration);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
         }
 
         private Task RefreshAsync(string key, DateTimeOffset expireAt, TimeSpan slidingExpiration)
@@ -181,7 +188,7 @@ namespace AspNet.Caching.MongoDb {
 
             // we don't care if sat > eat, because the index that triggers first wins
             var now = _clock.UtcNow;
-            var sat = slidingExpiration == default(TimeSpan) ? expireAt : now.Add(slidingExpiration).UtcDateTime;
+            var sat = slidingExpiration == default(TimeSpan) ? expireAt.UtcDateTime : now.Add(slidingExpiration).UtcDateTime;
 
             var update = Builders<MongoDbCacheEntry>.Update
                 .Set(x => x.SlidingExpireAt, sat);
