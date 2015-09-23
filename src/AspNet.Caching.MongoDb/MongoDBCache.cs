@@ -11,6 +11,7 @@ using Microsoft.Framework.Caching.Distributed;
 using Microsoft.Framework.Caching.Memory;
 using Microsoft.Framework.Internal;
 using Microsoft.Framework.OptionsModel;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace AspNet.Caching.MongoDb {
@@ -135,16 +136,14 @@ namespace AspNet.Caching.MongoDb {
                 .Set(x => x.ExpireAt, expireAt.UtcDateTime)
                 .Set(x => x.SlidingExpireAt, slidingExpireAt.UtcDateTime);
 
-            var updateOptions = new FindOneAndUpdateOptions<MongoDbCacheEntry, string> {
+            var updateOptions = new FindOneAndUpdateOptions<MongoDbCacheEntry, BsonDocument> {
                 IsUpsert = true,
                 // we actually don't need anything back, this is just to keep the data returned small
                 Projection = Builders<MongoDbCacheEntry>.Projection.Include(x => x.Key)
             };
 
             await ConnectAsync();
-            await _collection.FindOneAndUpdateAsync(x => x.Key == key,
-                update,
-                updateOptions);
+            await _collection.FindOneAndUpdateAsync(x => x.Key == key, update, updateOptions);
         }
 
         public void Refresh(string key) {
