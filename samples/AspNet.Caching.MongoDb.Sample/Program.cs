@@ -29,16 +29,30 @@ namespace AspNet.Caching.MongoDb.Sample {
             });
             Console.WriteLine("Connected");
 
+            await StoreAndRetrieveWithoutExpiration(message, cache, key, value);
+
+            await StoreAndRetrieveWithExpiration(message, cache, key);
+
+            await StoreAndRetrieveWithSlidingExpiration(message, cache, key);
+
+            Console.WriteLine("Press key to exit.");
+            Console.ReadKey(true);
+        }
+
+        private static async Task StoreAndRetrieveWithoutExpiration(string message, MongoDbCache cache, string key, byte[] value)
+        {
             Console.WriteLine($"Setting value '{message}' in cache");
             await cache.SetAsync(key, value, new DistributedCacheEntryOptions());
             Console.WriteLine("Set");
 
             Console.WriteLine("Getting value from cache");
             value = await cache.GetAsync(key);
-            if (value != null) {
+            if (value != null)
+            {
                 Console.WriteLine("Retrieved: " + Encoding.UTF8.GetString(value));
             }
-            else {
+            else
+            {
                 Console.WriteLine("Not Found");
             }
 
@@ -52,19 +66,26 @@ namespace AspNet.Caching.MongoDb.Sample {
 
             Console.WriteLine("Getting value from cache again");
             value = await cache.GetAsync(key);
-            if (value != null) {
-                Console.WriteLine("Retrieved: " + Encoding.UTF8.GetString(value));
+            if (value != null)
+            {
+                Console.WriteLine("Retrieved: " + Encoding.UTF8.GetString(value) + " (that's bad)");
             }
-            else {
+            else
+            {
                 Console.WriteLine("Not Found (that's good.)");
             }
+        }
 
+        private static async Task StoreAndRetrieveWithExpiration(string message, MongoDbCache cache, string key)
+        {
+            byte[] value;
             value = Encoding.UTF8.GetBytes(message);
-            Console.WriteLine($"Setting value '{message}' in cache with sliding expiration");
-            await cache.SetAsync(key, value, new DistributedCacheEntryOptions
-                                                 {
-                                                     SlidingExpiration = TimeSpan.FromSeconds(1)
-                                                 });
+            Console.WriteLine($"Setting value '{message}' in cache with relative expiration");
+            await
+                cache.SetAsync(
+                    key,
+                    value,
+                    new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(1) });
             Console.WriteLine("Set");
 
             Console.WriteLine("Getting value from cache");
@@ -78,6 +99,7 @@ namespace AspNet.Caching.MongoDb.Sample {
                 Console.WriteLine("Not Found (that's bad)");
             }
 
+            Console.WriteLine("Giving the cache time to think ...");
             await Task.Delay(TimeSpan.FromSeconds(4)).ConfigureAwait(false);
 
             Console.WriteLine("Getting value from cache again");
@@ -90,9 +112,61 @@ namespace AspNet.Caching.MongoDb.Sample {
             {
                 Console.WriteLine("Not Found (that's good.)");
             }
+        }
 
-            Console.WriteLine("Press key to exit.");
-            Console.ReadKey(true);
+        private static async Task StoreAndRetrieveWithSlidingExpiration(string message, MongoDbCache cache, string key)
+        {
+            byte[] value;
+            value = Encoding.UTF8.GetBytes(message);
+            Console.WriteLine($"Setting value '{message}' in cache with sliding expiration");
+            await cache.SetAsync(key, value, new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromSeconds(2) });
+            Console.WriteLine("Set");
+
+            Console.WriteLine("Getting value from cache");
+            value = await cache.GetAsync(key);
+            if (value != null)
+            {
+                Console.WriteLine("Retrieved: " + Encoding.UTF8.GetString(value) + " (that's good)");
+            }
+            else
+            {
+                Console.WriteLine("Not Found (that's bad)");
+            }
+
+            Console.WriteLine("Giving the cache time to think ...");
+            await Task.Delay(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+
+            Console.WriteLine("Refreshing value in cache");
+            await cache.RefreshAsync(key);
+            Console.WriteLine("Refreshed");
+
+            Console.WriteLine("Giving the cache time to think ...");
+            await Task.Delay(TimeSpan.FromSeconds(0.5)).ConfigureAwait(false);
+
+            Console.WriteLine("Getting value from cache again");
+            value = await cache.GetAsync(key);
+            if (value != null)
+            {
+                Console.WriteLine("Retrieved: " + Encoding.UTF8.GetString(value) + " (that's good)");
+            }
+            else
+            {
+                Console.WriteLine("Not Found (that's bad.)");
+            }
+
+            Console.WriteLine("Giving the cache time to think ...");
+            await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+
+            Console.WriteLine("Getting value from cache again");
+            value = await cache.GetAsync(key);
+            if (value != null)
+            {
+                Console.WriteLine("Retrieved: " + Encoding.UTF8.GetString(value) + " (that's bad)");
+            }
+            else
+            {
+                Console.WriteLine("Not Found (that's good.)");
+            }
         }
     }
 }
