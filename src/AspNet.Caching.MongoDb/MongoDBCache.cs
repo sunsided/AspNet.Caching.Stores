@@ -13,7 +13,6 @@ using Microsoft.Framework.Internal;
 using Microsoft.Framework.OptionsModel;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDB.Driver.Core.Events.Diagnostics;
 
 namespace AspNet.Caching.MongoDb {
     public sealed class MongoDbCache : IDistributedCache {
@@ -21,6 +20,7 @@ namespace AspNet.Caching.MongoDb {
         private static class FieldNames
         {
             public const string Key = "_id";
+            public const string ModifiedAt = "mat";
             public const string ExpireAt = "eat";
             public const string SlidingExpireAt = "sat";
             public const string SlidingExpiration = "sex";
@@ -153,6 +153,7 @@ namespace AspNet.Caching.MongoDb {
             var expireAt = CalculateExpireAt(options, now);
 
             var update = Builders<BsonDocument>.Update
+                .Set(FieldNames.ModifiedAt, now.UtcDateTime)
                 .Set(FieldNames.CacheData, value)
                 .Set(FieldNames.ExpireAt, expireAt.UtcDateTime);
 
