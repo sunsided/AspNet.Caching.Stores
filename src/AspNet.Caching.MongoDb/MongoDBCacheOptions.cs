@@ -14,9 +14,7 @@ namespace AspNet.Caching.MongoDb {
         public string Database { get; set; } = "caching";
 
         public string Collection { get; set; } = "cache";
-
-        public ISystemClock Clock { get; set; }
-
+        
         MongoDbCacheOptions IOptions<MongoDbCacheOptions>.Value => this;
     }
 }

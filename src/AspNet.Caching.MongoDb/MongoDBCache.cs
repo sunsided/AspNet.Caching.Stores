@@ -9,7 +9,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Framework.Caching.Distributed;
 using Microsoft.Framework.Caching.Memory;
-using Microsoft.Framework.Internal;
 using Microsoft.Framework.OptionsModel;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -28,7 +27,6 @@ namespace AspNet.Caching.MongoDb {
         }
 
         private readonly MongoDbCacheOptions _options;
-        private readonly ISystemClock _clock;
 
         private IMongoClient _client;
         private IMongoCollection<BsonDocument> _collection;
@@ -47,8 +45,6 @@ namespace AspNet.Caching.MongoDb {
             if (string.IsNullOrWhiteSpace(_options.Collection)) {
                 throw new InvalidOperationException("The MongoDB collection name must be nonempty.");
             }
-
-            _clock = _options.Clock ?? new SystemClock();
         }
 
         public void Connect() {
@@ -114,15 +110,16 @@ namespace AspNet.Caching.MongoDb {
             var entry = list.FirstOrDefault();
             if (entry == null) return null;
 
-            DateTime expireAt;
+            var now = DateTimeOffset.UtcNow;
+
+            DateTime expireAtUtc;
             TimeSpan slidingExpiration;
-            if (HasSlidingExpirationValue(entry, out expireAt, out slidingExpiration) && (expireAt >= _clock.UtcNow)) {
-                await RefreshAsync(key, expireAt, slidingExpiration);
+            if (HasSlidingExpirationValue(entry, out expireAtUtc, out slidingExpiration) && (expireAtUtc >= now)) {
+                await RefreshAsync(key, expireAtUtc, slidingExpiration);
             }
 
             // the index doesn't seem to delete at the exact time given, so manually check for expiration as well
-            var now = _clock.UtcNow;
-            var expirationTime = expireAt;
+            var expirationTime = expireAtUtc;
             BsonValue slidingExpireAt;
             if (entry.TryGetValue(FieldNames.SlidingExpireAt, out slidingExpireAt)) {
                 var sat = slidingExpireAt.ToUniversalTime();
@@ -149,7 +146,7 @@ namespace AspNet.Caching.MongoDb {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            var now = _clock.UtcNow;
+            var now = DateTimeOffset.UtcNow;
             var expireAt = CalculateExpireAt(options, now);
 
             var update = Builders<BsonDocument>.Update
@@ -201,15 +198,15 @@ namespace AspNet.Caching.MongoDb {
 
             var entry = cursor.Current.First();
 
-            DateTime expireAt;
+            DateTime expireAtUtc;
             TimeSpan slidingExpiration;
-            if (HasSlidingExpirationValue(entry, out expireAt, out slidingExpiration)) {
-                await RefreshAsync(key, expireAt, slidingExpiration);
+            if (HasSlidingExpirationValue(entry, out expireAtUtc, out slidingExpiration)) {
+                await RefreshAsync(key, expireAtUtc, slidingExpiration);
             }
         }
 
-        private static bool HasSlidingExpirationValue(BsonDocument entry, out DateTime expireAt, out TimeSpan slidingExpiration) {
-            expireAt = entry[FieldNames.ExpireAt].ToUniversalTime();
+        private static bool HasSlidingExpirationValue(BsonDocument entry, out DateTime expireAtUtc, out TimeSpan slidingExpiration) {
+            expireAtUtc = entry[FieldNames.ExpireAt].ToUniversalTime();
             slidingExpiration = default(TimeSpan);
 
             BsonValue value;
@@ -228,7 +225,7 @@ namespace AspNet.Caching.MongoDb {
             }
 
             // we don't care if sat > eat, because the index that triggers first wins
-            var now = _clock.UtcNow;
+            var now = DateTimeOffset.UtcNow;
             var sat = slidingExpiration == default(TimeSpan)
                 ? expireAt.UtcDateTime
                 : now.Add(slidingExpiration).UtcDateTime;
