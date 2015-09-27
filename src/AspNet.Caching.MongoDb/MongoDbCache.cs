@@ -70,14 +70,14 @@ namespace AspNet.Caching.MongoDb {
 
             // Create the index to expire on the "expire at" value
             await collection.Indexes.CreateOneAsync(
-                Builders<BsonDocument>.IndexKeys.Ascending(MongoDbConstants.ExpireAt),
+                Builders<BsonDocument>.IndexKeys.Ascending(MongoDbConstants.ExpireAt1),
                 new CreateIndexOptions {
                     ExpireAfter = TimeSpan.FromSeconds(0)
                 });
 
             // Create the index to expire on the "sliding expiration" value
             await collection.Indexes.CreateOneAsync(
-                Builders<BsonDocument>.IndexKeys.Ascending(MongoDbConstants.SlidingExpireAt),
+                Builders<BsonDocument>.IndexKeys.Ascending(MongoDbConstants.SlidingExpireAt1),
                 new CreateIndexOptions {
                     ExpireAfter = TimeSpan.FromSeconds(0)
                 });
@@ -98,10 +98,10 @@ namespace AspNet.Caching.MongoDb {
 
             var filter = GetIdMatchFilter(key);
             var projection = Builders<BsonDocument>.Projection
-                .Include(MongoDbConstants.CacheData)
-                .Include(MongoDbConstants.ExpireAt)
-                .Include(MongoDbConstants.SlidingExpireAt)
-                .Include(MongoDbConstants.SlidingExpiration);
+                .Include(MongoDbConstants.CacheData1)
+                .Include(MongoDbConstants.ExpireAt1)
+                .Include(MongoDbConstants.SlidingExpireAt1)
+                .Include(MongoDbConstants.SlidingExpiration1);
 
             var collection = await GetCollectionAsync();
             var entry = await collection.Find(filter).Project(projection).FirstOrDefaultAsync();
@@ -118,7 +118,7 @@ namespace AspNet.Caching.MongoDb {
             // the index doesn't seem to delete at the exact time given, so manually check for expiration as well
             var expirationTime = expireAtUtc;
             BsonValue slidingExpireAt;
-            if (entry.TryGetValue(MongoDbConstants.SlidingExpireAt, out slidingExpireAt)) {
+            if (entry.TryGetValue(MongoDbConstants.SlidingExpireAtField, out slidingExpireAt)) {
                 var sat = slidingExpireAt.ToUniversalTime();
                 if (sat < expirationTime) {
                     expirationTime = sat;
@@ -127,7 +127,7 @@ namespace AspNet.Caching.MongoDb {
 
             return (expirationTime < now)
                 ? null
-                : entry[MongoDbConstants.CacheData].AsByteArray;
+                : entry[MongoDbConstants.CacheDataField].AsByteArray;
         }
 
         public void Set(string key, byte[] value, DistributedCacheEntryOptions options) {
@@ -160,7 +160,7 @@ namespace AspNet.Caching.MongoDb {
             var updateOptions = new FindOneAndUpdateOptions<BsonDocument> {
                 IsUpsert = true,
                 // we actually don't need anything back, this is just to keep the data returned small
-                Projection = Builders<BsonDocument>.Projection.Include(MongoDbConstants.Key)
+                Projection = Builders<BsonDocument>.Projection.Include(MongoDbConstants.Key1)
             };
 
             var filter = GetIdMatchFilter(key);
@@ -180,8 +180,8 @@ namespace AspNet.Caching.MongoDb {
 
             var filter = GetIdMatchFilter(key);
             var projection = Builders<BsonDocument>.Projection
-                .Include(MongoDbConstants.ExpireAt)
-                .Include(MongoDbConstants.SlidingExpiration);
+                .Include(MongoDbConstants.ExpireAt1)
+                .Include(MongoDbConstants.SlidingExpiration1);
 
             var options = new FindOptions<BsonDocument> { Limit = 1, Projection = projection };
 
@@ -204,11 +204,11 @@ namespace AspNet.Caching.MongoDb {
         }
 
         private static bool HasSlidingExpirationValue(BsonDocument entry, out DateTime expireAtUtc, out TimeSpan slidingExpiration) {
-            expireAtUtc = entry[MongoDbConstants.ExpireAt].ToUniversalTime();
+            expireAtUtc = entry[MongoDbConstants.ExpireAtField].ToUniversalTime();
             slidingExpiration = default(TimeSpan);
 
             BsonValue value;
-            if (!entry.TryGetValue(MongoDbConstants.SlidingExpiration, out value)) {
+            if (!entry.TryGetValue(MongoDbConstants.SlidingExpirationField, out value)) {
                 return false;
             }
 
