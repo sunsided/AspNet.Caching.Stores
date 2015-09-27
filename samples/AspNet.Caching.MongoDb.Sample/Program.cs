@@ -5,6 +5,8 @@
  */
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Framework.Caching.Distributed;
@@ -29,6 +31,8 @@ namespace AspNet.Caching.MongoDb.Sample {
             });
             Console.WriteLine("Connected");
 
+            await RetrieveInParallel(cache);
+
             await StoreAndRetrieveWithoutExpiration(message, cache, key, value);
 
             await StoreAndRetrieveWithExpiration(message, cache, key);
@@ -37,6 +41,31 @@ namespace AspNet.Caching.MongoDb.Sample {
 
             Console.WriteLine("Press key to exit.");
             Console.ReadKey(true);
+        }
+
+        private static Task RetrieveInParallel(MongoDbCache cache)
+        {
+            Console.WriteLine("Running concurrency test");
+
+            var list = new Task[20];
+            for (var index = 0; index < list.Length; index++)
+            {
+                var localIndex = index;
+                list[index] = Task.Run(async () => {
+                    try
+                    {
+                        var item = await cache.GetAsync("key");
+                        Console.WriteLine("Returned from task " + localIndex);
+                    }
+
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                });
+            }
+
+            return Task.WhenAll(list);
         }
 
         private static async Task StoreAndRetrieveWithoutExpiration(string message, MongoDbCache cache, string key, byte[] value)

@@ -6,7 +6,6 @@
 
 using System;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Framework.Caching.Distributed;
 using Microsoft.Framework.Caching.Memory;
@@ -20,7 +19,8 @@ namespace AspNet.Caching.MongoDb {
         private readonly MongoDbCacheOptions _options;
 
         private IMongoClient _client;
-        private IMongoCollection<BsonDocument> _collection;
+
+        private IMongoCollection<BsonDocument> _collection => _client.GetDatabase(_options.Database).GetCollection<BsonDocument>(_options.Collection);
 
         public MongoDbCache(IOptions<MongoDbCacheOptions> optionsAccessor = null) {
             _options = optionsAccessor?.Value ?? new MongoDbCacheOptions();
@@ -62,7 +62,7 @@ namespace AspNet.Caching.MongoDb {
             }
 
             var database = _client.GetDatabase(_options.Database);
-            var collection = _collection = database.GetCollection<BsonDocument>(_options.Collection);
+            var collection = database.GetCollection<BsonDocument>(_options.Collection);
 
             // Create the index to expire on the "expire at" value
             await collection.Indexes.CreateOneAsync(
