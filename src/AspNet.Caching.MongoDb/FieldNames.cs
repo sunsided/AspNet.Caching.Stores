@@ -2,10 +2,10 @@
 {
     internal static class FieldNames {
         public const string Key = "_id";
-        public const string ModifiedAt = "mat";
-        public const string ExpireAt = "eat";
-        public const string SlidingExpireAt = "sat";
-        public const string SlidingExpiration = "sex";
-        public const string CacheData = "dat";
+        public const string ModifiedAt = "m@";
+        public const string ExpireAt = "e@";
+        public const string SlidingExpireAt = "s@";
+        public const string SlidingExpiration = "sx";
+        public const string CacheData = "d";
     }
 }
