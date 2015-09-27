@@ -104,9 +104,7 @@ namespace AspNet.Caching.MongoDb {
                 .Include(MongoDbConstants.SlidingExpiration);
 
             var collection = await GetCollectionAsync();
-            var list = await collection.Find(filter).Project(projection).ToListAsync();
-
-            var entry = list.FirstOrDefault();
+            var entry = await collection.Find(filter).Project(projection).FirstOrDefaultAsync();
             if (entry == null) return null;
 
             var now = DateTimeOffset.UtcNow;
