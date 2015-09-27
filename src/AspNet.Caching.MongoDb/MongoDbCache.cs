@@ -16,16 +16,6 @@ using MongoDB.Driver;
 namespace AspNet.Caching.MongoDb {
     public sealed class MongoDbCache : IDistributedCache {
 
-        private static class FieldNames
-        {
-            public const string Key = "_id";
-            public const string ModifiedAt = "mat";
-            public const string ExpireAt = "eat";
-            public const string SlidingExpireAt = "sat";
-            public const string SlidingExpiration = "sex";
-            public const string CacheData = "dat";
-        }
-
         private readonly MongoDbCacheOptions _options;
 
         private IMongoClient _client;
