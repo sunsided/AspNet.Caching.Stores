@@ -6,6 +6,7 @@
 
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Framework.Caching.Distributed;
 using Microsoft.Framework.Caching.Memory;
@@ -34,6 +35,11 @@ namespace AspNet.Caching.MongoDb {
 
             if (string.IsNullOrWhiteSpace(_options.Collection)) {
                 throw new InvalidOperationException("The MongoDB collection name must be nonempty.");
+            }
+
+            if (_options.DefaultRelativeExpiration < TimeSpan.Zero)
+            {
+                throw new InvalidOperationException("The default relative expiration value must be a positive time span.");
             }
         }
 
@@ -247,17 +253,20 @@ namespace AspNet.Caching.MongoDb {
         /// <param name="now">The current time</param>
         /// <returns>The absolute expiration time</returns>
         /// <exception cref="ArgumentOutOfRangeException"><see cref="MemoryCacheEntryOptions.AbsoluteExpiration"/> was in the past.</exception>
-        private static DateTimeOffset CalculateExpireAt(DistributedCacheEntryOptions options, DateTimeOffset now) {
+        private DateTimeOffset CalculateExpireAt(DistributedCacheEntryOptions options, DateTimeOffset now) {
             if (options.AbsoluteExpirationRelativeToNow.HasValue) {
                 return now.Add(options.AbsoluteExpirationRelativeToNow.Value);
             }
 
             if (!options.AbsoluteExpiration.HasValue) {
-                return DateTimeOffset.MaxValue;
+                return options.SlidingExpiration != null 
+                    ? DateTimeOffset.MaxValue 
+                    : now.Add(_options.DefaultRelativeExpiration);
             }
 
             if (options.AbsoluteExpiration.Value < now) {
-                throw new ArgumentOutOfRangeException(nameof(DistributedCacheEntryOptions.AbsoluteExpiration),
+                throw new ArgumentOutOfRangeException(
+                    nameof(DistributedCacheEntryOptions.AbsoluteExpiration),
                     options.AbsoluteExpiration.Value,
                     "The absolute expiration value must be in the future.");
             }

@@ -4,7 +4,7 @@
  * for more information concerning the license and the contributors participating to this project.
  */
 
-using Microsoft.Framework.Internal;
+using System;
 using Microsoft.Framework.OptionsModel;
 
 namespace AspNet.Caching.MongoDb {
@@ -14,6 +14,8 @@ namespace AspNet.Caching.MongoDb {
         public string Database { get; set; } = "caching";
 
         public string Collection { get; set; } = "cache";
+
+        public TimeSpan DefaultRelativeExpiration { get; set; } = TimeSpan.FromDays(30);
         
         MongoDbCacheOptions IOptions<MongoDbCacheOptions>.Value => this;
     }
