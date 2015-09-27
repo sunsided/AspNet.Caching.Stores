@@ -20,6 +20,19 @@ namespace AspNet.Caching.MongoDb {
 
         private IMongoClient _client;
 
+        private readonly ProjectionDefinition<BsonDocument> _getProjection = Builders<BsonDocument>.Projection
+                .Include(MongoDbConstants.CacheData)
+                .Include(MongoDbConstants.ExpireAt)
+                .Include(MongoDbConstants.SlidingExpireAt)
+                .Include(MongoDbConstants.SlidingExpiration);
+
+        private readonly ProjectionDefinition<BsonDocument> _refreshProjection = Builders<BsonDocument>.Projection
+                .Include(MongoDbConstants.ExpireAt)
+                .Include(MongoDbConstants.SlidingExpiration);
+
+        private readonly ProjectionDefinition<BsonDocument> _keyOnlyProjection = Builders<BsonDocument>.Projection
+            .Include(MongoDbConstants.Key);
+
         public MongoDbCache(IOptions<MongoDbCacheOptions> optionsAccessor = null) {
             _options = optionsAccessor?.Value ?? new MongoDbCacheOptions();
 
@@ -97,14 +110,10 @@ namespace AspNet.Caching.MongoDb {
             }
 
             var filter = GetIdMatchFilter(key);
-            var projection = Builders<BsonDocument>.Projection
-                .Include(MongoDbConstants.CacheData)
-                .Include(MongoDbConstants.ExpireAt)
-                .Include(MongoDbConstants.SlidingExpireAt)
-                .Include(MongoDbConstants.SlidingExpiration);
+            var projection = ;
 
             var collection = await GetCollectionAsync();
-            var entry = await collection.Find(filter).Project(projection).FirstOrDefaultAsync();
+            var entry = await collection.Find(filter).Project(_getProjection).FirstOrDefaultAsync();
             if (entry == null) return null;
 
             var now = DateTimeOffset.UtcNow;
@@ -160,7 +169,7 @@ namespace AspNet.Caching.MongoDb {
             var updateOptions = new FindOneAndUpdateOptions<BsonDocument> {
                 IsUpsert = true,
                 // we actually don't need anything back, this is just to keep the data returned small
-                Projection = Builders<BsonDocument>.Projection.Include(MongoDbConstants.Key)
+                Projection = _keyOnlyProjection
             };
 
             var filter = GetIdMatchFilter(key);
@@ -179,11 +188,7 @@ namespace AspNet.Caching.MongoDb {
             }
 
             var filter = GetIdMatchFilter(key);
-            var projection = Builders<BsonDocument>.Projection
-                .Include(MongoDbConstants.ExpireAt)
-                .Include(MongoDbConstants.SlidingExpiration);
-
-            var options = new FindOptions<BsonDocument> { Limit = 1, Projection = projection };
+            var options = new FindOptions<BsonDocument> { Limit = 1, Projection = _refreshProjection };
 
             // refreshing is nasty because we need a roundtrip to Mongo
             // to obtain the sliding expiration value
