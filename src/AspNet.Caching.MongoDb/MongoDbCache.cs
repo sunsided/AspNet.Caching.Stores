@@ -110,7 +110,6 @@ namespace AspNet.Caching.MongoDb {
             }
 
             var filter = GetIdMatchFilter(key);
-            var projection = ;
 
             var collection = await GetCollectionAsync();
             var entry = await collection.Find(filter).Project(_getProjection).FirstOrDefaultAsync();
