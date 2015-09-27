@@ -20,7 +20,7 @@ namespace AspNet.Caching.MongoDb {
 
         private IMongoClient _client;
 
-        private IMongoCollection<BsonDocument> _collection => _client.GetDatabase(_options.Database).GetCollection<BsonDocument>(_options.Collection);
+        private IMongoCollection<BsonDocument> Collection => _client.GetDatabase(_options.Database).GetCollection<BsonDocument>(_options.Collection);
 
         public MongoDbCache(IOptions<MongoDbCacheOptions> optionsAccessor = null) {
             _options = optionsAccessor?.Value ?? new MongoDbCacheOptions();
@@ -61,8 +61,7 @@ namespace AspNet.Caching.MongoDb {
                 return;
             }
 
-            var database = _client.GetDatabase(_options.Database);
-            var collection = database.GetCollection<BsonDocument>(_options.Collection);
+            var collection = Collection;
 
             // Create the index to expire on the "expire at" value
             await collection.Indexes.CreateOneAsync(
@@ -101,7 +100,7 @@ namespace AspNet.Caching.MongoDb {
                 .Include(MongoDbConstants.SlidingExpireAt)
                 .Include(MongoDbConstants.SlidingExpiration);
 
-            var list = await _collection.Find(filter).Project(projection).ToListAsync();
+            var list = await Collection.Find(filter).Project(projection).ToListAsync();
 
             var entry = list.FirstOrDefault();
             if (entry == null) return null;
@@ -165,7 +164,7 @@ namespace AspNet.Caching.MongoDb {
             var filter = GetIdMatchFilter(key);
 
             await ConnectAsync();
-            await _collection.FindOneAndUpdateAsync(filter, update, updateOptions);
+            await Collection.FindOneAndUpdateAsync(filter, update, updateOptions);
         }
 
         public void Refresh(string key) {
@@ -186,7 +185,7 @@ namespace AspNet.Caching.MongoDb {
 
             // refreshing is nasty because we need a roundtrip to Mongo
             // to obtain the sliding expiration value
-            var cursor = await _collection.FindAsync(filter, options);
+            var cursor = await Collection.FindAsync(filter, options);
 
             if (!await cursor.MoveNextAsync()) {
                 return;
@@ -231,7 +230,7 @@ namespace AspNet.Caching.MongoDb {
             var update = Builders<BsonDocument>.Update
                 .Set(MongoDbConstants.SlidingExpireAt, sat);
 
-            return _collection.FindOneAndUpdateAsync(filter, update);
+            return Collection.FindOneAndUpdateAsync(filter, update);
         }
 
         public void Remove(string key) {
@@ -243,7 +242,7 @@ namespace AspNet.Caching.MongoDb {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            return _collection.DeleteOneAsync(GetIdMatchFilter(key));
+            return Collection.DeleteOneAsync(GetIdMatchFilter(key));
         }
 
         /// <summary>
