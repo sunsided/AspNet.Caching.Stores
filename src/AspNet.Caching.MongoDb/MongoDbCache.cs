@@ -66,14 +66,14 @@ namespace AspNet.Caching.MongoDb {
 
             // Create the index to expire on the "expire at" value
             await collection.Indexes.CreateOneAsync(
-                Builders<BsonDocument>.IndexKeys.Ascending(FieldNames.ExpireAt),
+                Builders<BsonDocument>.IndexKeys.Ascending(MongoDbConstants.ExpireAt),
                 new CreateIndexOptions {
                     ExpireAfter = TimeSpan.FromSeconds(0)
                 });
 
             // Create the index to expire on the "sliding expiration" value
             await collection.Indexes.CreateOneAsync(
-                Builders<BsonDocument>.IndexKeys.Ascending(FieldNames.SlidingExpireAt),
+                Builders<BsonDocument>.IndexKeys.Ascending(MongoDbConstants.SlidingExpireAt),
                 new CreateIndexOptions {
                     ExpireAfter = TimeSpan.FromSeconds(0)
                 });
@@ -96,10 +96,10 @@ namespace AspNet.Caching.MongoDb {
 
             var filter = GetIdMatchFilter(key);
             var projection = Builders<BsonDocument>.Projection
-                .Include(FieldNames.CacheData)
-                .Include(FieldNames.ExpireAt)
-                .Include(FieldNames.SlidingExpireAt)
-                .Include(FieldNames.SlidingExpiration);
+                .Include(MongoDbConstants.CacheData)
+                .Include(MongoDbConstants.ExpireAt)
+                .Include(MongoDbConstants.SlidingExpireAt)
+                .Include(MongoDbConstants.SlidingExpiration);
 
             var list = await _collection.Find(filter).Project(projection).ToListAsync();
 
@@ -117,7 +117,7 @@ namespace AspNet.Caching.MongoDb {
             // the index doesn't seem to delete at the exact time given, so manually check for expiration as well
             var expirationTime = expireAtUtc;
             BsonValue slidingExpireAt;
-            if (entry.TryGetValue(FieldNames.SlidingExpireAt, out slidingExpireAt)) {
+            if (entry.TryGetValue(MongoDbConstants.SlidingExpireAt, out slidingExpireAt)) {
                 var sat = slidingExpireAt.ToUniversalTime();
                 if (sat < expirationTime) {
                     expirationTime = sat;
@@ -126,7 +126,7 @@ namespace AspNet.Caching.MongoDb {
 
             return (expirationTime < now)
                 ? null
-                : entry[FieldNames.CacheData].AsByteArray;
+                : entry[MongoDbConstants.CacheData].AsByteArray;
         }
 
         public void Set(string key, byte[] value, DistributedCacheEntryOptions options) {
@@ -146,20 +146,20 @@ namespace AspNet.Caching.MongoDb {
             var expireAt = CalculateExpireAt(options, now);
 
             var update = Builders<BsonDocument>.Update
-                .Set(FieldNames.ModifiedAt, now.UtcDateTime)
-                .Set(FieldNames.CacheData, value)
-                .Set(FieldNames.ExpireAt, expireAt.UtcDateTime);
+                .Set(MongoDbConstants.ModifiedAt, now.UtcDateTime)
+                .Set(MongoDbConstants.CacheData, value)
+                .Set(MongoDbConstants.ExpireAt, expireAt.UtcDateTime);
 
             if (options.SlidingExpiration.HasValue) {
                 var slidingExpireAt = now.Add(options.SlidingExpiration.Value);
-                update = update.Set(FieldNames.SlidingExpiration, options.SlidingExpiration.Value.TotalSeconds)
-                               .Set(FieldNames.SlidingExpireAt, slidingExpireAt.UtcDateTime);
+                update = update.Set(MongoDbConstants.SlidingExpiration, options.SlidingExpiration.Value.TotalSeconds)
+                               .Set(MongoDbConstants.SlidingExpireAt, slidingExpireAt.UtcDateTime);
             }
 
             var updateOptions = new FindOneAndUpdateOptions<BsonDocument> {
                 IsUpsert = true,
                 // we actually don't need anything back, this is just to keep the data returned small
-                Projection = Builders<BsonDocument>.Projection.Include(FieldNames.Key)
+                Projection = Builders<BsonDocument>.Projection.Include(MongoDbConstants.Key)
             };
 
             var filter = GetIdMatchFilter(key);
@@ -179,8 +179,8 @@ namespace AspNet.Caching.MongoDb {
 
             var filter = GetIdMatchFilter(key);
             var projection = Builders<BsonDocument>.Projection
-                .Include(FieldNames.ExpireAt)
-                .Include(FieldNames.SlidingExpiration);
+                .Include(MongoDbConstants.ExpireAt)
+                .Include(MongoDbConstants.SlidingExpiration);
 
             var options = new FindOptions<BsonDocument> { Limit = 1, Projection = projection };
 
@@ -202,11 +202,11 @@ namespace AspNet.Caching.MongoDb {
         }
 
         private static bool HasSlidingExpirationValue(BsonDocument entry, out DateTime expireAtUtc, out TimeSpan slidingExpiration) {
-            expireAtUtc = entry[FieldNames.ExpireAt].ToUniversalTime();
+            expireAtUtc = entry[MongoDbConstants.ExpireAt].ToUniversalTime();
             slidingExpiration = default(TimeSpan);
 
             BsonValue value;
-            if (!entry.TryGetValue(FieldNames.SlidingExpiration, out value)) {
+            if (!entry.TryGetValue(MongoDbConstants.SlidingExpiration, out value)) {
                 return false;
             }
 
@@ -229,7 +229,7 @@ namespace AspNet.Caching.MongoDb {
             var filter = GetIdMatchFilter(key);
 
             var update = Builders<BsonDocument>.Update
-                .Set(FieldNames.SlidingExpireAt, sat);
+                .Set(MongoDbConstants.SlidingExpireAt, sat);
 
             return _collection.FindOneAndUpdateAsync(filter, update);
         }
@@ -275,7 +275,7 @@ namespace AspNet.Caching.MongoDb {
         }
 
         private static FilterDefinition<BsonDocument> GetIdMatchFilter(string key) {
-            return Builders<BsonDocument>.Filter.Eq(FieldNames.Key, key);
+            return Builders<BsonDocument>.Filter.Eq(MongoDbConstants.Key, key);
         }
     }
 }

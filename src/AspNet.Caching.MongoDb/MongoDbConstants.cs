@@ -1,6 +1,6 @@
 ﻿namespace AspNet.Caching.MongoDb
 {
-    internal static class FieldNames {
+    internal static class MongoDbConstants {
         public const string Key = "_id";
         public const string ModifiedAt = "m@";
         public const string ExpireAt = "e@";
