@@ -5,6 +5,7 @@
  */
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Framework.Caching.Distributed;
@@ -17,8 +18,7 @@ namespace AspNet.Caching.MongoDb {
     public sealed class MongoDbCache : IDistributedCache {
 
         private readonly MongoDbCacheOptions _options;
-
-        private IMongoClient _client;
+        private readonly AsyncLock _initializationLock = new AsyncLock();
 
         private readonly ProjectionDefinition<BsonDocument> _getProjection = Builders<BsonDocument>.Projection
                 .Include(MongoDbConstants.CacheData)
@@ -32,6 +32,8 @@ namespace AspNet.Caching.MongoDb {
 
         private readonly ProjectionDefinition<BsonDocument> _keyOnlyProjection = Builders<BsonDocument>.Projection
             .Include(MongoDbConstants.Key);
+
+        private IMongoCollection<BsonDocument> _collection;
 
         public MongoDbCache(IOptions<MongoDbCacheOptions> optionsAccessor = null) {
             _options = optionsAccessor?.Value ?? new MongoDbCacheOptions();
@@ -48,8 +50,7 @@ namespace AspNet.Caching.MongoDb {
                 throw new InvalidOperationException("The MongoDB collection name must be nonempty.");
             }
 
-            if (_options.DefaultRelativeExpiration < TimeSpan.Zero)
-            {
+            if (_options.DefaultRelativeExpiration < TimeSpan.Zero) {
                 throw new InvalidOperationException("The default relative expiration value must be a positive time span.");
             }
         }
@@ -58,42 +59,45 @@ namespace AspNet.Caching.MongoDb {
             ConnectAsync().GetAwaiter().GetResult();
         }
 
-        private bool CreateMongoClientSynchronized() {
-            lock (_options.ConnectionString) {
-                if (_client != null) return true;
-                _client = new MongoClient(_options.ConnectionString);
-                return false;
-            }
-        }
-
         private async Task<IMongoCollection<BsonDocument>>  GetCollectionAsync() {
             await ConnectAsync();
-            return _client.GetDatabase(_options.Database)
-                .GetCollection<BsonDocument>(_options.Collection);
+
+            Debug.Assert(_collection != null, "_collection != null");
+            return _collection;
         }
 
-        public async Task ConnectAsync() {
-            var connectionAlreadyEstablished = CreateMongoClientSynchronized();
-            if (connectionAlreadyEstablished) {
+        public async Task ConnectAsync()
+        {
+            if (_collection != null) {
                 return;
             }
 
-            var collection = _client.GetDatabase(_options.Database)
-                .GetCollection<BsonDocument>(_options.Collection);
+            using (await _initializationLock.LockAsync()) {
+                if (_collection != null) {
+                    return;
+                }
 
-            // Create the index to expire on the "expire at" value
-            await collection.Indexes.CreateOneAsync(
-                Builders<BsonDocument>.IndexKeys.Ascending(MongoDbConstants.ExpireAt),
-                new CreateIndexOptions {
-                    ExpireAfter = TimeSpan.FromSeconds(0)
-                });
+                var client = new MongoClient(_options.ConnectionString);
 
-            // Create the index to expire on the "sliding expiration" value
-            await collection.Indexes.CreateOneAsync(
-                Builders<BsonDocument>.IndexKeys.Ascending(MongoDbConstants.SlidingExpireAt),
-                new CreateIndexOptions {
-                    ExpireAfter = TimeSpan.FromSeconds(0)
-                });
+                var collection = _collection = client.GetDatabase(_options.Database)
+                    .GetCollection<BsonDocument>(_options.Collection);
+
+                // Create the index to expire on the "expire at" value
+                await collection.Indexes.CreateOneAsync(
+                    Builders<BsonDocument>.IndexKeys.Ascending(MongoDbConstants.ExpireAt),
+                    new CreateIndexOptions
+                    {
+                        ExpireAfter = TimeSpan.FromSeconds(0)
+                    });
+
+                // Create the index to expire on the "sliding expiration" value
+                await collection.Indexes.CreateOneAsync(
+                    Builders<BsonDocument>.IndexKeys.Ascending(MongoDbConstants.SlidingExpireAt),
+                    new CreateIndexOptions
+                    {
+                        ExpireAfter = TimeSpan.FromSeconds(0)
+                    });
+            }
         }
 
         public byte[] Get(string key) {
