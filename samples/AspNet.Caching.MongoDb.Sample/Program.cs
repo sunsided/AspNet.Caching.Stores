@@ -33,7 +33,7 @@ namespace AspNet.Caching.MongoDb.Sample {
             });
             Console.WriteLine("Connected");
 
-            await RetrieveInParallel(cache);
+            // await RetrieveInParallel(cache);
 
             await StoreAndRetrieveWithoutExpiration(message, cache, key, value);
 
@@ -156,10 +156,12 @@ namespace AspNet.Caching.MongoDb.Sample {
 
         private static async Task StoreAndRetrieveWithSlidingExpiration(string message, MongoDbCache cache, string key)
         {
+            const int expirationSeconds = 4;
+
             byte[] value;
             value = Encoding.UTF8.GetBytes(message);
             Console.WriteLine($"Setting value '{message}' in cache with sliding expiration");
-            await cache.SetAsync(key, value, new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromSeconds(2) });
+            await cache.SetAsync(key, value, new DistributedCacheEntryOptions { SlidingExpiration = TimeSpan.FromSeconds(expirationSeconds) });
             Console.WriteLine("Set");
 
             Console.WriteLine("Getting value from cache");
@@ -182,7 +184,7 @@ namespace AspNet.Caching.MongoDb.Sample {
             Console.WriteLine("Refreshed");
 
             Console.WriteLine("Giving the cache time to think ...");
-            await Task.Delay(TimeSpan.FromSeconds(0.5)).ConfigureAwait(false);
+            await Task.Delay(TimeSpan.FromSeconds(expirationSeconds/4D)).ConfigureAwait(false);
 
             Console.WriteLine("Getting value from cache again");
             value = await cache.GetAsync(key);
@@ -197,7 +199,7 @@ namespace AspNet.Caching.MongoDb.Sample {
             }
 
             Console.WriteLine("Giving the cache time to think ...");
-            await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+            await Task.Delay(TimeSpan.FromSeconds(expirationSeconds*1.1D)).ConfigureAwait(false);
 
             Console.WriteLine("Getting value from cache again");
             value = await cache.GetAsync(key);
