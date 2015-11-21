@@ -193,18 +193,11 @@ namespace AspNet.Caching.MongoDb {
             }
 
             var filter = GetIdMatchFilter(key);
-            var options = new FindOptions<BsonDocument> { Limit = 1, Projection = _refreshProjection };
 
             // refreshing is nasty because we need a roundtrip to Mongo
             // to obtain the sliding expiration value
             var collection = await GetCollectionAsync().ConfigureAwait(false);
-            var cursor = await collection.FindAsync(filter, options).ConfigureAwait(false);
-
-            if (!await cursor.MoveNextAsync().ConfigureAwait(false)) {
-                return;
-            }
-
-            var entry = cursor.Current.First();
+            var entry = await collection.Find(filter).Limit(1).Project(_refreshProjection).FirstOrDefaultAsync().ConfigureAwait(false);
 
             DateTime expireAtUtc;
             TimeSpan slidingExpiration;
