@@ -100,11 +100,18 @@ namespace AspNet.Caching.MongoDb.Sample {
             if (value != null)
             {
                 Console.WriteLine("Retrieved: " + Encoding.UTF8.GetString(value) + " (that's bad)");
+                BlockOnKeypress();
             }
             else
             {
                 Console.WriteLine("Not Found (that's good.)");
             }
+        }
+
+        private static void BlockOnKeypress()
+        {
+            Console.WriteLine("Press key to continue");
+            Console.ReadKey(false);
         }
 
         private static async Task StoreAndRetrieveWithExpiration(string message, MongoDbCache cache, string key)
@@ -128,6 +135,7 @@ namespace AspNet.Caching.MongoDb.Sample {
             else
             {
                 Console.WriteLine("Not Found (that's bad)");
+                BlockOnKeypress();
             }
 
             Console.WriteLine("Giving the cache time to think ...");
@@ -138,6 +146,7 @@ namespace AspNet.Caching.MongoDb.Sample {
             if (value != null)
             {
                 Console.WriteLine("Retrieved: " + Encoding.UTF8.GetString(value) + " (that's bad)");
+                BlockOnKeypress();
             }
             else
             {
@@ -162,6 +171,7 @@ namespace AspNet.Caching.MongoDb.Sample {
             else
             {
                 Console.WriteLine("Not Found (that's bad)");
+                BlockOnKeypress();
             }
 
             Console.WriteLine("Giving the cache time to think ...");
@@ -183,6 +193,7 @@ namespace AspNet.Caching.MongoDb.Sample {
             else
             {
                 Console.WriteLine("Not Found (that's bad.)");
+                BlockOnKeypress();
             }
 
             Console.WriteLine("Giving the cache time to think ...");
@@ -193,6 +204,7 @@ namespace AspNet.Caching.MongoDb.Sample {
             if (value != null)
             {
                 Console.WriteLine("Retrieved: " + Encoding.UTF8.GetString(value) + " (that's bad)");
+                BlockOnKeypress();
             }
             else
             {
