@@ -5,20 +5,22 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Framework.Caching.Distributed;
 
 namespace AspNet.Caching.MongoDb.Sample {
     public class Program {
+
         /// <summary>
         /// This sample assumes that a MongoDB server is running on the local machine.
         /// </summary>
         /// <param name="args"></param>
-        public static async Task Main(string[] args) {
+        public static void Main(string[] args) {
+            MainAsync(args).GetAwaiter().GetResult();
+        }
 
+        private static async Task MainAsync(string[] args) {
             var key = "myKey";
             var message = "Hello, World!";
             var value = Encoding.UTF8.GetBytes(message);
